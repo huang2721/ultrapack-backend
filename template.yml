@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  ultrapack tempalte
+Globals:
+  Function:
+    Timeout: 60
+
+Parameters:
+  Table:
+    Type: String
+    Default: packing-list-table
+  Region:
+    Type: String
+    Default: us-east-1
+  AWSEnv:
+    Type: String
+    Default: AWS
+
+Resources:
+  WriteListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: write_list.app.lambda_handler
+      Runtime: python3.8
+      Environment:
+        Variables:
+          TABLE: !Ref Table
+          REGION: !Ref Region
+          AWSENV: !Ref AWSEnv
+      Events:
+        WriteList:
+          Type: Api
+          Properties:
+            Path: /write
+            Method: post
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PackingListTable
+  ReadListsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: read_lists.app.lambda_handler
+      Runtime: python3.8
+      Environment:
+        Variables:
+          TABLE: !Ref Table
+          REGION: !Ref Region
+          AWSENV: !Ref AWSEnv
+      Events:
+        CreateActivities:
+          Type: Api
+          Properties:
+            Path: /lists/{user_id}
+            Method: get
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PackingListTable
+  DeleteListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: delete_list.app.lambda_handler
+      Runtime: python3.8
+      Environment:
+        Variables:
+          TABLE: !Ref Table
+          REGION: !Ref Region
+          AWSENV: !Ref AWSEnv
+      Events:
+        CreateActivities:
+          Type: Api
+          Properties:
+            Path: /delete/{user_id}/{id}
+            Method: delete
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PackingListTable
+  PackingListTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        -
+          AttributeName: "user_id"
+          AttributeType: "S"
+        -
+          AttributeName: "list_id"
+          AttributeType: "S"
+      KeySchema:
+        -
+          AttributeName: "user_id"
+          KeyType: "HASH"
+        -
+          AttributeName: "list_id"
+          KeyType: "RANGE"
+      ProvisionedThroughput:
+        ReadCapacityUnits: "1"
+        WriteCapacityUnits: "1"
+      TableName: "packing-list-table"
+  
+
+Outputs:
+  ActivitiesApi:
+    Description: "API Gateway endpoint URL for Prod stage for Write List Function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/write/"
+  WriteListFunction:
+    Description: "Write List Lambda Function ARN"
+    Value: !GetAtt WriteListFunction.Arn
+  WriteListFunctionIamRole:
+    Description: "Implicit IAM Role created for Write List function"
+    Value: !GetAtt WriteListFunctionRole.Arn
+  ReadListsFunction:
+    Description: "Get Lists Lambda Function ARN"
+    Value: !GetAtt ReadListsFunction.Arn
+  ReadListsFunctionIamRole:
+    Description: "Implicit IAM Role created for Get Lists function"
+    Value: !GetAtt ReadListsFunctionRole.Arn
+  DeleteListFunction:
+    Description: "Delete List Lambda Function ARN"
+    Value: !GetAtt DeleteListFunction.Arn
+  DeleteListFunctionIamRole:
+    Description: "Implicit IAM Role created for Delete List function"
+    Value: !GetAtt DeleteListFunctionRole.Arn
+  PackingListTable:
+    Description: "DynamoDB Table"
+    Value: !Ref PackingListTable
+  PackingListTableArn:
+    Description: "DynamoDB Table ARN"
+    Value: !GetAtt PackingListTable.Arn
