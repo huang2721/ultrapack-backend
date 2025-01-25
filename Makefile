@@ -91,7 +91,7 @@ server:
 	@ sam local start-api --docker-network lambda-local --parameter-overrides Table=PackingListTable Region=us-east-1 AWSEnv=AWS_SAM_LOCAL
 
 test:
-	@ tox
+	@ pytest
 
 package:
 	@ python setup.py sdist
